@@ -1,0 +1,107 @@
+from scipy.optimize import minimize
+import numpy as np
+import math
+import random
+
+# функция для расчета значений целевой функции
+
+
+def func(x):
+    return -x[0]**2-1.5*x[1]**2+2*x[0]*x[1]-4*x[0]+8*x[1]
+
+# функция вычисления градиента целевой функции
+
+
+def func_deriv(x):
+    dfx0 = -2*x[0]+2*x[1]-4
+    dfx1 = -3*x[1]+2*x[0]+8
+    return np.array([dfx0, dfx1])
+
+
+# кортеж для задания ограничений - каждое ограничение - словарь с описанием типа условия, функции вычисления левой части и функкции вычисления градиента левой части
+cons = ({'type':'ineq', 'fun': lambda x: np.array([-x[0]-x[1]+3]), 'jac': lambda x: np.array([-1,-1])},
+{'type':'ineq', 'fun': lambda x: np.array([-x[0]+x[1]+1]), 'jac': lambda x: np.array([-1,1])},
+{'type':'ineq', 'fun': lambda x: np.array([x[0]]), 'jac': lambda x: np.array([1,0])},
+{'type':'ineq', 'fun': lambda x: np.array([x[1]]), 'jac': lambda x: np.array([0,1])})
+
+
+# функция минимизации
+res = minimize(func, np.array([0, 3]), jac=func_deriv, constraints=cons)
+print(res)
+
+
+# эвристический алгоритм спуска с горы
+# проверка попадания точки в множество
+def in_set(x):
+    return (x[0]+x[1] <= 3) and (x[0]-x[1] <= 1) and (x[0] >= 0) and (x[1] >= 0)
+
+# алгоритм спуска с горы
+
+
+def minimize1(x_0):
+    k = 10
+    # радиус окрестности
+    i = 0
+    # Создание листа с x-ами
+    x_list = list()
+    fx_min_list = list()
+    while i < 100:
+        r1 = np.random.uniform(0, k)
+        if np.random.randint(100) % 2 == 1:
+            r1 = -r1
+        r2 = np.random.uniform(0, k)
+        if np.random.randint(100) % 2 == 1:
+            r2 = -r2
+        x_1 = [x_0[0]+r1, x_0[1]+r2]
+        if in_set(x_1):
+            x_list.append(x_1)
+            i += 1
+
+    for item in x_list:
+        if len(fx_min_list) < 10:
+            fx_min_list.append(item)
+        else:
+            fx_min_list.sort(reverse=True)
+            if func(item) < func(fx_min_list[0]):
+                fx_min_list[0] = item
+
+    x_list = list()
+
+    k = 1
+    for loop in range(100):
+        for a in range(len(fx_min_list)):
+            i = 0
+            while i < 100:
+                r1 = np.random.uniform(0, k)
+                if np.random.randint(100) % 2 == 1:
+                    r1 = -r1
+                r2 = np.random.uniform(0, k)
+                if np.random.randint(100) % 2 == 1:
+                    r2 = -r2
+                x_1 = [fx_min_list[a][0]+r1, fx_min_list[a][1]+r2]
+                if in_set(x_1):
+                    x_list.append(x_1)
+                    i += 1
+
+        fx_min_list = list()
+
+        for item in x_list:
+            if len(fx_min_list) < 10:
+                fx_min_list.append(item)
+            else:
+                fx_min_list.sort(reverse=True)
+                if func(item) < func(fx_min_list[0]):
+                    fx_min_list[0] = item
+
+        x_list = list()
+        k = k * 0.7
+
+    f_0 = func(fx_min_list[0])
+    x_0 = fx_min_list[0]
+
+    return x_0, f_0
+
+
+x, f = minimize1([3, 0])
+print(x)
+print(f)
